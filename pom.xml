@@ -24,7 +24,8 @@
 
 	<modules>
 		<module>stats-service</module>
-		<module>main-service</module>
+		<module>core</module>
+		<module>infra</module>
 	</modules>
 
 	<build>
