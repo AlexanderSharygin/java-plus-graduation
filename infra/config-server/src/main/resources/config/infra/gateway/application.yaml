@@ -17,3 +17,9 @@ management:
     web:
       exposure:
         include: gateway
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: DEBUG
