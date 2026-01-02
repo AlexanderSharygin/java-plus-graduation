@@ -1,13 +1,15 @@
 package ru.practicum.ewm;
 
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 
 @SpringBootApplication
-@ConfigurationPropertiesScan
-public class StatService {
+@EnableEurekaServer
+public class DiscoveryServer {
     public static void main(String[] args) {
-        SpringApplication.run(StatService.class, args);
+        SpringApplication.run(DiscoveryServer.class, args);
     }
+
 }

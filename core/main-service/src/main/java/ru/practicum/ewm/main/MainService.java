@@ -3,9 +3,10 @@ package ru.practicum.ewm.main;
 import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 
-
+@ConfigurationPropertiesScan
 @SpringBootApplication(scanBasePackages = {"ru.practicum.ewm.client",
         "ru.practicum.ewm.main.category",
         "ru.practicum.ewm.main.event",
