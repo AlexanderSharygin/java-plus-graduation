@@ -3,13 +3,13 @@ package ru.practicum.ewm.category.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.event.repository.EventRepository;
-import ru.practicum.ewm.mapper.event.EventCategoryMapper;
-import ru.practicum.ewm.model.category.EventCategory;
 import ru.practicum.ewm.category.repository.EventCategoryRepository;
 import ru.practicum.ewm.dto.catergory.EventCategoryDto;
+import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.mapper.event.EventCategoryMapper;
+import ru.practicum.ewm.model.category.EventCategory;
 import ru.practicum.ewm.model.event.Event;
 
 import java.util.List;

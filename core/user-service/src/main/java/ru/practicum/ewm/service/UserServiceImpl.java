@@ -10,7 +10,6 @@ import ru.practicum.ewm.mapper.user.UserMapper;
 import ru.practicum.ewm.model.user.User;
 import ru.practicum.ewm.repository.UserRepository;
 
-
 import java.util.List;
 import java.util.Optional;
 

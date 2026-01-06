@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import ru.practicum.ewm.model.category.EventCategory;
 
-
 import java.util.Optional;
 
 @Repository

@@ -7,13 +7,13 @@ import ru.practicum.ewm.dto.user.UserDto;
 import java.util.List;
 
 public interface UserService {
-	List<UserDto> getAll(List<Long> usersId, Pageable pageable);
+    List<UserDto> getAll(List<Long> usersId, Pageable pageable);
 
-	UserDto getById(long userId);
+    UserDto getById(long userId);
 
-	UserDto create(UserDto userDto);
+    UserDto create(UserDto userDto);
 
-	void delete(long userId);
+    void delete(long userId);
 
 
 }

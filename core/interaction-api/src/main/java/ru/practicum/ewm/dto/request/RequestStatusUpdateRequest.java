@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import ru.practicum.ewm.model.request.RequestStatus;
 
-
 import java.util.List;
 
 @Data

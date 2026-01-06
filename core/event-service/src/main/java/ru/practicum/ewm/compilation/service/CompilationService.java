@@ -3,7 +3,6 @@ package ru.practicum.ewm.compilation.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.mapper.event.EventCategoryMapper;
 import ru.practicum.ewm.client.StatsClient;
 import ru.practicum.ewm.compilation.mapper.CompilationMapper;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
@@ -15,10 +14,10 @@ import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.event.service.EventService;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.mapper.event.EventCategoryMapper;
 import ru.practicum.ewm.mapper.user.UserMapper;
 import ru.practicum.ewm.model.compilation.Compilation;
 import ru.practicum.ewm.model.event.Event;
-
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
