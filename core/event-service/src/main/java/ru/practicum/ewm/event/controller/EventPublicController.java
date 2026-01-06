@@ -13,7 +13,6 @@ import ru.practicum.ewm.dto.event.EventDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
 import ru.practicum.ewm.event.service.EventService;
 
-
 import java.time.LocalDateTime;
 import java.util.List;
 

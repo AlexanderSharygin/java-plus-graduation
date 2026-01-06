@@ -20,6 +20,6 @@ public class FeignController implements RequestClient {
 
     @Override
     public List<RequestDto> getConfirmedRequestsForEvent(@RequestBody List<Event> events) {
-       return  requestService.getConfirmedRequestsForEvent(events);
+        return requestService.getConfirmedRequestsForEvent(events);
     }
 }
