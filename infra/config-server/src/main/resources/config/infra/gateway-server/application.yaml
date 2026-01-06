@@ -21,7 +21,7 @@ spring:
             - Path= /users/*/requests, /users/*/requests/*/cancel, /users/*/events/*/requests, /request/all
 
         - id: comment-service_route
-          uri: lb://comment-service
+          uri: lb://comments-service
           predicates:
             - Path= /users/*/comments, /users/*/comments/*,  /users/*/comments/events/*, /events/*/comments, /comments/*
 

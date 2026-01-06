@@ -57,7 +57,7 @@ public class EventMapper {
                 eventDto.getParticipantLimit(),
                 eventDto.getPublishedOn().toInstant(ZoneOffset.UTC),
                 eventDto.getRequestModeration(),
-                EventState.PENDING);
+                eventDto.getState());
     }
 
     public static EventDto fromEventToEventDto(Event event, EventCategoryDto eventCategoryDto, UserShortDto owner,

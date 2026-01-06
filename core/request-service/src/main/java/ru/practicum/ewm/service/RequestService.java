@@ -1,5 +1,6 @@
 package ru.practicum.ewm.service;
 
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.dto.request.RequestDto;
@@ -38,8 +39,8 @@ public class RequestService {
     }
 
     public List<RequestDto> getEventRequests(Long userId, Long eventId) {
-        userClient.getUserById(userId);
-        Event event = EventMapper.fromEventDtoToEvent(eventClient.getEventById(eventId));
+        checkUserIfExists(userId);
+        Event event = checkEventIsPublished(eventId);
         if (!Objects.equals(event.getOwner().getId(), userId)) {
             throw new NotFoundException("User c id " + userId + " не хозяин для события " + eventId);
         }
@@ -49,8 +50,8 @@ public class RequestService {
     }
 
     public RequestStatusUpdateResponse updateRequest(Long userId, Long eventId, RequestStatusUpdateRequest request) {
-        userClient.getUserById(userId);
-        Event event = EventMapper.fromEventDtoToEvent(eventClient.getEventById(eventId));
+        checkUserIfExists(userId);
+        Event event = checkEventIsPublished(eventId);
         List<ParticipationRequest> requests = requestRepository.findAllByIdIn(request.getRequestIds());
         Set<RequestDto> confirmed = new HashSet<>();
         Set<RequestDto> rejected = new HashSet<>();
@@ -115,8 +116,9 @@ public class RequestService {
     }
 
     public RequestDto create(Long userId, Long eventId) {
-        User user = UserMapper.toUserFromUserDto(userClient.getUserById(userId));
-        Event event = EventMapper.fromEventDtoToEvent(eventClient.getEventById(eventId));
+        User user = checkUserIfExists(userId);
+        Event event = checkEventIsPublished(eventId);
+
         if (Objects.equals(user.getId(), event.getOwner().getId())) {
             throw new ConflictException("User c id " + userId + " не хозяин для события " + eventId);
         }
@@ -146,7 +148,7 @@ public class RequestService {
     }
 
     public RequestDto cancelRequestByUser(Long userId, Long requestId) {
-        User user = UserMapper.toUserFromUserDto(userClient.getUserById(userId));
+        User user = checkUserIfExists(userId);
         ParticipationRequest request = requestRepository
                 .findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id=" + requestId + " не существует!"));
@@ -164,5 +166,21 @@ public class RequestService {
                 CONFIRMED);
 
         return requests.stream().map(RequestMapper::fromRequestTpRequestDto).toList();
+    }
+
+    private Event checkEventIsPublished(Long eventId) {
+        try {
+            return EventMapper.fromEventDtoToEvent(eventClient.getEventById(eventId));
+        } catch (FeignException.NotFound e) {
+            throw new ConflictException("Событие с id" + eventId + " ещё не опубликовано");
+        }
+    }
+
+    private User checkUserIfExists(Long userId) {
+        try {
+            return UserMapper.toUserFromUserDto(userClient.getUserById(userId));
+        } catch (FeignException.NotFound e) {
+            throw new NotFoundException("User c id" + userId + " не существует!");
+        }
     }
 }
