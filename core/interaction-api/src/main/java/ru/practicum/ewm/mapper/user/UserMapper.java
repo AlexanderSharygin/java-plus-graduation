@@ -18,6 +18,10 @@ public class UserMapper {
         return userDto;
     }
 
+    public static UserShortDto toUserShortDtoFromUserDto(UserDto userDto) {
+        return new UserShortDto(userDto.getId(), userDto.getName());
+    }
+
     public static UserShortDto fromUserToUserShortDto(User user) {
         UserShortDto userShortDto = new UserShortDto(-1, user.getName());
         if (user.getId() != null) {

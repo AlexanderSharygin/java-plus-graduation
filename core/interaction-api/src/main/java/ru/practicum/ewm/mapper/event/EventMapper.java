@@ -3,6 +3,7 @@ package ru.practicum.ewm.mapper.event;
 import lombok.NoArgsConstructor;
 import ru.practicum.ewm.dto.catergory.EventCategoryDto;
 import ru.practicum.ewm.dto.event.CreateNewEventDto;
+import ru.practicum.ewm.dto.event.EventCommentDto;
 import ru.practicum.ewm.dto.event.EventDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
 import ru.practicum.ewm.dto.user.UserShortDto;
@@ -20,24 +21,6 @@ import static java.time.LocalDateTime.ofInstant;
 @NoArgsConstructor
 public class EventMapper {
 
-
-    public static Event fromCreateNewEventDtoToEvent(CreateNewEventDto newEventDto, User owner, EventCategory category) {
-        return new Event(null,
-                newEventDto.getTitle(),
-                newEventDto.getAnnotation(),
-                newEventDto.getDescription(),
-                category,
-                now().toInstant(ZoneOffset.UTC),
-                newEventDto.getEventDate().toInstant(ZoneOffset.UTC),
-                owner,
-                newEventDto.getLocation(),
-                newEventDto.getPaid(),
-                newEventDto.getParticipantLimit(),
-                null,
-                newEventDto.getRequestModeration(),
-                EventState.PENDING);
-    }
-
     public static Event fromEventDtoToEvent(EventDto eventDto) {
         User user = new User();
         user.setId(eventDto.getInitiator().getId());
@@ -51,13 +34,30 @@ public class EventMapper {
                 category,
                 now().toInstant(ZoneOffset.UTC),
                 eventDto.getEventDate().toInstant(ZoneOffset.UTC),
-                user,
+                user.getId(),
                 eventDto.getLocation(),
                 eventDto.getPaid(),
                 eventDto.getParticipantLimit(),
                 eventDto.getPublishedOn().toInstant(ZoneOffset.UTC),
                 eventDto.getRequestModeration(),
                 eventDto.getState());
+    }
+
+    public static Event fromCreateNewEventDtoToEvent(CreateNewEventDto newEventDto, User owner, EventCategory category) {
+        return new Event(null,
+                newEventDto.getTitle(),
+                newEventDto.getAnnotation(),
+                newEventDto.getDescription(),
+                category,
+                now().toInstant(ZoneOffset.UTC),
+                newEventDto.getEventDate().toInstant(ZoneOffset.UTC),
+                owner.getId(),
+                newEventDto.getLocation(),
+                newEventDto.getPaid(),
+                newEventDto.getParticipantLimit(),
+                null,
+                newEventDto.getRequestModeration(),
+                EventState.PENDING);
     }
 
     public static EventDto fromEventToEventDto(Event event, EventCategoryDto eventCategoryDto, UserShortDto owner,
@@ -96,5 +96,13 @@ public class EventMapper {
                 event.getIsPaid(),
                 event.getTitle(),
                 views);
+    }
+
+    public static EventCommentDto fromEventToEventCommentDto(Event event, EventCategoryDto eventCategoryDto) {
+        return new EventCommentDto(event.getId(),
+                event.getAnnotation(),
+                eventCategoryDto,
+                ofInstant(event.getEventDateTime(), ZoneId.of("UTC")),
+                event.getTitle());
     }
 }

@@ -4,17 +4,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.client.StatsClient;
-import ru.practicum.ewm.compilation.mapper.CompilationMapper;
+import ru.practicum.ewm.mapper.compilation.CompilationMapper;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
 import ru.practicum.ewm.dto.compilation.CompilationDto;
 import ru.practicum.ewm.dto.compilation.CompilationRequestDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
-import ru.practicum.ewm.event.mapper.EventMapper;
+import ru.practicum.ewm.dto.user.UserDto;
 import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.event.service.EventService;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.NotFoundException;
+import ru.practicum.ewm.feign_clients.UserClient;
 import ru.practicum.ewm.mapper.event.EventCategoryMapper;
+import ru.practicum.ewm.mapper.event.EventMapper;
 import ru.practicum.ewm.mapper.user.UserMapper;
 import ru.practicum.ewm.model.compilation.Compilation;
 import ru.practicum.ewm.model.event.Event;
@@ -30,17 +32,18 @@ public class CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final EventService eventService;
-
     private final StatsClient statClient;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final UserClient userClient;
 
     @Autowired
     public CompilationService(CompilationRepository compilationRepository, EventRepository eventRepository,
-                              EventService eventService, StatsClient statClient) {
+                              EventService eventService, StatsClient statClient, UserClient userClient) {
         this.compilationRepository = compilationRepository;
         this.eventRepository = eventRepository;
         this.eventService = eventService;
         this.statClient = statClient;
+        this.userClient = userClient;
     }
 
     public List<CompilationDto> getAll(boolean pinned, Pageable pageable) {
@@ -163,10 +166,18 @@ public class CompilationService {
                 .getConfirmedRequestsCountForEvents(new ArrayList<>(events));
         Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
 
+        Map<Long, Long> eventsOwnersId = new HashMap<>();
+        for (var event : events) {
+            eventsOwnersId.put(event.getId(), event.getOwnerId());
+        }
+        List<UserDto> owners = userClient.getUsers(eventsOwnersId.values().stream().toList());
+
         return events.stream()
                 .map(event -> EventMapper.fromEventToEventShortDto(event,
                         EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
-                        UserMapper.fromUserToUserShortDto(event.getOwner()),
+                        UserMapper.toUserShortDtoFromUserDto(Objects.requireNonNull(owners.stream()
+                                .filter(k -> k.getId() == event.getOwnerId())
+                                .findFirst().orElse(null))),
                         confirmedRequestsCountForEvents.getOrDefault(event.getId(), 0L),
                         viewsMap.get(event.getId()))).collect(Collectors.toSet());
     }

@@ -1,4 +1,4 @@
-package ru.practicum.ewm.compilation.mapper;
+package ru.practicum.ewm.mapper.compilation;
 
 import lombok.NoArgsConstructor;
 import ru.practicum.ewm.dto.compilation.CompilationDto;

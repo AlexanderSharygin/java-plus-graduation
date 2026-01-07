@@ -10,9 +10,9 @@ public class RequestMapper {
     public static RequestDto fromRequestTpRequestDto(ParticipationRequest participationrequest) {
         return new RequestDto(
                 participationrequest.getCreatedOn(),
-                participationrequest.getEvent().getId(),
+                participationrequest.getEventId(),
                 participationrequest.getId(),
-                participationrequest.getRequester().getId(),
+                participationrequest.getRequesterId(),
                 participationrequest.getStatus());
     }
 }

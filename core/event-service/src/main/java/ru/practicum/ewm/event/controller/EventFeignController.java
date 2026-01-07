@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.ewm.dto.event.EventCommentDto;
 import ru.practicum.ewm.dto.event.EventDto;
 import ru.practicum.ewm.event.service.EventService;
 import ru.practicum.ewm.feign_clients.EventClient;
+
+import java.util.List;
 
 @RestController
 @Validated
@@ -21,5 +24,10 @@ public class EventFeignController implements EventClient {
     @Override
     public EventDto getEventById(@PathVariable Long eventId) {
         return service.getById(eventId);
+    }
+
+    @Override
+    public List<EventCommentDto> getEventsDtoForComments(List<Long> eventIds) {
+        return service.getEventsById(eventIds);
     }
 }

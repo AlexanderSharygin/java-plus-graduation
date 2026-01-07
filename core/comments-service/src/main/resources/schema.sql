@@ -6,7 +6,5 @@ CREATE TABLE IF NOT EXISTS comments
     text       VARCHAR(1000)                           NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE             NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT pk_comments PRIMARY KEY (id),
-    CONSTRAINT fk_comments_event FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
-    CONSTRAINT fk_comments_author FOREIGN KEY (author_id) REFERENCES users (id) ON DELETE CASCADE
+    CONSTRAINT pk_comments PRIMARY KEY (id)
 );

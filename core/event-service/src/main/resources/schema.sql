@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS events
     category_id          BIGINT REFERENCES event_categories (id) ON DELETE CASCADE,
     created_on           TIMESTAMP WITHOUT TIME ZONE             NOT NULL,
     event_date_time      TIMESTAMP WITHOUT TIME ZONE             NOT NULL,
-    owner_id             BIGINT REFERENCES USERS (id) ON DELETE CASCADE,
+    owner_id             BIGINT,
     is_paid              BOOLEAN,
     participant_limit    INTEGER,
     published_on         TIMESTAMP WITHOUT TIME ZONE,

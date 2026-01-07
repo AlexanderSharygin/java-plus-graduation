@@ -21,12 +21,10 @@ public class ParticipationRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDateTime createdOn;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id")
-    private Event event;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id")
-    private User requester;
+    @Column(name = "event_id")
+    private Long eventId;
+    @Column(name = "requester_id")
+    private Long requesterId;
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
 }

@@ -10,7 +10,7 @@ import ru.practicum.ewm.category.repository.EventCategoryRepository;
 import ru.practicum.ewm.client.StatsClient;
 import ru.practicum.ewm.dto.event.*;
 import ru.practicum.ewm.dto.request.RequestDto;
-import ru.practicum.ewm.event.mapper.EventMapper;
+import ru.practicum.ewm.dto.user.UserDto;
 import ru.practicum.ewm.event.repository.EventRepository;
 import ru.practicum.ewm.event.repository.LocationRepository;
 import ru.practicum.ewm.exception.BadRequestException;
@@ -19,6 +19,7 @@ import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.feign_clients.RequestClient;
 import ru.practicum.ewm.feign_clients.UserClient;
 import ru.practicum.ewm.mapper.event.EventCategoryMapper;
+import ru.practicum.ewm.mapper.event.EventMapper;
 import ru.practicum.ewm.mapper.user.UserMapper;
 import ru.practicum.ewm.model.category.EventCategory;
 import ru.practicum.ewm.model.event.Event;
@@ -180,6 +181,13 @@ public class EventService {
         return eventDto;
     }
 
+    public List<EventCommentDto> getEventsById(List<Long> eventIds) {
+
+        return eventRepository.findAllByIdIn(eventIds).stream()
+                .map(k -> EventMapper.fromEventToEventCommentDto(k, EventCategoryMapper.toCategoryDtoFromCategory(k.getCategory())))
+                .toList();
+    }
+
     public Integer getEventsViews(Long eventId) {
         List<String> uris = List.of("/events/" + eventId);
         List<HashMap<Object, Object>> stats = getStats(uris);
@@ -194,7 +202,7 @@ public class EventService {
         Event event = getEventIfExist(eventId);
         userClient.getUserById(userId);
 
-        if (!Objects.equals(event.getOwner().getId(), userId)) {
+        if (!Objects.equals(event.getOwnerId(), userId)) {
             throw new NotFoundException("User с id " + userId + " не хозяин для события " + eventId);
         }
 
@@ -285,8 +293,8 @@ public class EventService {
 
     public List<EventShortDto> getByUserId(Long userId, Pageable paging) {
         User user = UserMapper.toUserFromUserDto(userClient.getUserById(userId));
-        List<Event> events = eventRepository.findAllByOwner(user, paging).stream().toList();
-        events.forEach(event -> event.setOwner(user));
+        List<Event> events = eventRepository.findAllByOwnerId(user.getId(), paging).stream().toList();
+        events.forEach(event -> event.setOwnerId(user.getId()));
 
         return getEventsShorts(events);
     }
@@ -294,10 +302,9 @@ public class EventService {
     public EventDto getEventByUserId(Long userId, Long eventId) {
         Event event = getEventIfExist(eventId);
         userClient.getUserById(userId);
-        if (!Objects.equals(event.getOwner().getId(), userId)) {
+        if (!Objects.equals(event.getOwnerId(), userId)) {
             throw new NotFoundException("User с id " + userId + " не хозяин события " + eventId);
         }
-
         return getEventDtoFromEvent(event);
     }
 
@@ -380,10 +387,11 @@ public class EventService {
     private EventDto getEventDtoFromEvent(Event event) {
         long confirmedRequests = requestClient.getConfirmedRequestsForEvent(List.of(event)).size();
         Integer views = getEventsViews(event.getId());
+        User owner = UserMapper.toUserFromUserDto(userClient.getUserById(event.getOwnerId()));
 
         return EventMapper.fromEventToEventDto(event,
                 EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
-                UserMapper.fromUserToUserShortDto(event.getOwner()),
+                UserMapper.fromUserToUserShortDto(owner),
                 confirmedRequests,
                 views);
     }
@@ -402,10 +410,17 @@ public class EventService {
         List<Long> eventIds = getEventsIdFromEventsList(events);
         Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
         Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
+        Map<Long, Long> eventsOwnersId = new HashMap<>();
+        for (var event : events) {
+            eventsOwnersId.put(event.getId(), event.getOwnerId());
+        }
+        List<UserDto> owners = userClient.getUsers(eventsOwnersId.values().stream().toList());
 
         return events.stream().map(event -> EventMapper.fromEventToEventDto(event,
                 EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
-                UserMapper.fromUserToUserShortDto(event.getOwner()),
+                UserMapper.toUserShortDtoFromUserDto(Objects.requireNonNull(owners.stream()
+                        .filter(k -> k.getId() == event.getOwnerId())
+                        .findFirst().orElse(null))),
                 confirmedRequestsCountForEvents.getOrDefault(event.getId(), 0L),
                 viewsMap.get(event.getId()))).toList();
     }
@@ -414,10 +429,17 @@ public class EventService {
         List<Long> eventIds = getEventsIdFromEventsList(events);
         Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
         Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
+        Map<Long, Long> eventsOwnersId = new HashMap<>();
+        for (var event : events) {
+            eventsOwnersId.put(event.getId(), event.getOwnerId());
+        }
+        List<UserDto> owners = userClient.getUsers(eventsOwnersId.values().stream().toList());
 
         return events.stream().map(event -> EventMapper.fromEventToEventShortDto(event,
                 EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
-                UserMapper.fromUserToUserShortDto(event.getOwner()),
+                UserMapper.toUserShortDtoFromUserDto(Objects.requireNonNull(owners.stream()
+                        .filter(k -> k.getId() == event.getOwnerId())
+                        .findFirst().orElseThrow())),
                 confirmedRequestsCountForEvents.getOrDefault(event.getId(), 0L),
                 viewsMap.get(event.getId()))).toList();
     }

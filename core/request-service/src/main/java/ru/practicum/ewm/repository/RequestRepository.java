@@ -13,18 +13,18 @@ import java.util.List;
 @Repository
 public interface RequestRepository extends JpaRepository<ParticipationRequest, Long> {
 
-    List<ParticipationRequest> findByEvent(Event event);
+    List<ParticipationRequest> findByEventId(Long eventId);
 
-    List<ParticipationRequest> findAllByRequester(User requester);
+    List<ParticipationRequest> findAllByRequesterId(Long requesterId);
 
-    List<ParticipationRequest> findAllByEventAndRequester(Event event, User requester);
+    List<ParticipationRequest> findAllByEventIdAndRequesterId(Long eventId, Long requesterId);
 
-    List<ParticipationRequest> findAllByEventAndStatus(Event event, RequestStatus status);
+    List<ParticipationRequest> findAllByEventIdAndStatus(Long eventId, RequestStatus status);
 
     @Query("SELECT p " +
             "FROM ParticipationRequest p " +
-            "WHERE p.event IN :events AND p.status = :status")
-    List<ParticipationRequest> findAllByEventInAndStatus(List<Event> events, RequestStatus status);
+            "WHERE p.eventId IN :eventIds AND p.status = :status")
+    List<ParticipationRequest> findAllByEventIdInAndStatusAndStatus(List<Long> eventIds, RequestStatus status);
 
     List<ParticipationRequest> findAllByIdIn(List<Long> ids);
 }

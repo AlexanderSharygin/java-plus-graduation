@@ -33,6 +33,12 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    public List<UserDto> getAll(List<Long> usersId) {
+        return userRepository.findAllByIdIn(usersId).stream()
+                .map(UserMapper::toUserDtoFromUser).toList();
+    }
+
+
     public UserDto getById(long userId) {
         return UserMapper.toUserDtoFromUser(getUserIfExist(userId));
     }

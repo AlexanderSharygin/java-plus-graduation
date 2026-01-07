@@ -20,13 +20,11 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JoinColumn(name = "event_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Event event;
+    @Column(name = "event_id")
+    private Long eventId;
 
-    @JoinColumn(name = "author_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User author;
+    @Column(name = "author_id")
+    private Long authorId;
 
     @Column(nullable = false)
     private String text;

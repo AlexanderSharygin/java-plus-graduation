@@ -12,17 +12,20 @@ import ru.practicum.ewm.model.request.RequestStatus;
 import ru.practicum.ewm.model.user.User;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 @NotNull
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    Page<Event> findAllByOwner(User owner, Pageable pageable);
+    Page<Event> findAllByOwnerId(Long ownerId, Pageable pageable);
 
     List<Event> findAllByCategory(EventCategory category);
 
+    List<Event> findAllByIdIn(List<Long> ids);
+
     @Query("SELECT e FROM Event e " +
-            "WHERE e.owner.id is not null or e.owner.id IN :usersIds " +
+            "WHERE e.ownerId is not null or e.ownerId IN :usersIds " +
             "AND e.state is not null or e.state = :states " +
             "AND e.category.id is not null or e.category.id in :categoriesIds " +
             "AND e.eventDateTime > :dateTime")
@@ -32,7 +35,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                                                    Pageable pageable);
 
     @Query("SELECT e FROM Event e " +
-            "WHERE e.owner.id IN :usersIds " +
+            "WHERE e.ownerId IN :usersIds " +
             "AND e.state IN :states " +
             "AND e.category.id IN :categoriesIds " +
             "AND e.eventDateTime BETWEEN :startDateTime AND :endDateTime")
@@ -43,7 +46,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query(" SELECT e " +
             "FROM Event e " +
-            "JOIN ParticipationRequest r ON e.id = r.event.id " +
+            "JOIN ParticipationRequest r ON e.id = r.eventId " +
             "WHERE (upper(e.annotation) LIKE UPPER(CONCAT('%', :text, '%')) " +
             "OR UPPER(e.description) LIKE UPPER(CONCAT('%', :text, '%')) " +
             "OR :text is null) " +
@@ -53,7 +56,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND r.status = :requestState " +
             "AND e.isPaid = :isPaid " +
             "GROUP BY e.id, e.annotation, e.category, e.createdOn, e.description, e.eventDateTime," +
-            " e.owner, e.location, e.isPaid, e.participantLimit, e.publishedOn, e.isModerated," +
+            " e.ownerId, e.location, e.isPaid, e.participantLimit, e.publishedOn, e.isModerated," +
             " e.state, e.title " +
             "HAVING COUNT(r.status) < e.participantLimit ")
     Page<Event> findAllAvailablePublishedEventsByCategoryAndStateAfterDate(String text, Instant startDateTime,
@@ -64,7 +67,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     @Query(" SELECT e " +
             "FROM Event e " +
-            "JOIN ParticipationRequest r ON e.id = r.event.id " +
+            "JOIN ParticipationRequest r ON e.id = r.eventId " +
             "WHERE (UPPER(e.annotation) LIKE UPPER(CONCAT('%', :text, '%')) " +
             "OR UPPER(e.description)  LIKE UPPER(concat('%', :text, '%')) " +
             "OR :text is null) " +
@@ -74,7 +77,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND r.status = :requestState " +
             "AND e.isPaid = :isPaid " +
             "GROUP BY e.id, e.annotation, e.category, e.createdOn, e.description, e.eventDateTime," +
-            " e.owner, e.location, e.isPaid, e.participantLimit, e.publishedOn, e.isModerated," +
+            " e.ownerId, e.location, e.isPaid, e.participantLimit, e.publishedOn, e.isModerated," +
             " e.state, e.title " +
             "HAVING COUNT(r.status) < e.participantLimit ")
     Page<Event> findAllAvailablePublishedEventsByCategoryAndStateBetweenDates(String text, Instant startDateTime,
@@ -107,7 +110,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findAllEventsWithStatusBetweenDates(String text, Instant startDateTime, Instant endDateTime,
                                                     List<Long> categoriesIds, EventState state,
                                                     Pageable pageable, boolean isPaid);
-
 
 }
 

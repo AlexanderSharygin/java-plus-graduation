@@ -9,6 +9,8 @@ import java.util.List;
 public interface UserService {
     List<UserDto> getAll(List<Long> usersId, Pageable pageable);
 
+    List<UserDto> getAll(List<Long> usersId);
+
     UserDto getById(long userId);
 
     UserDto create(UserDto userDto);
