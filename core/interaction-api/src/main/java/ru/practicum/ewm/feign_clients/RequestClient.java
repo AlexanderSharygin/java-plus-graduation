@@ -5,10 +5,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.ewm.dto.request.RequestDto;
 import ru.practicum.ewm.model.event.Event;
+import ru.practicum.ewm.resilience.RequestFeignClientFallback;
 
 import java.util.List;
 
-@FeignClient(name = "request-service")
+@FeignClient(name = "request-service", fallback = RequestFeignClientFallback.class)
 public interface RequestClient {
 
     @PostMapping("/request/all")

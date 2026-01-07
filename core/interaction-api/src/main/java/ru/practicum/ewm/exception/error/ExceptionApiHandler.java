@@ -1,6 +1,7 @@
 package ru.practicum.ewm.exception.error;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -8,10 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import ru.practicum.ewm.exception.BadRequestException;
-import ru.practicum.ewm.exception.ConflictException;
-import ru.practicum.ewm.exception.NotFoundException;
-import ru.practicum.ewm.exception.PublicationException;
+import ru.practicum.ewm.exception.*;
 
 import java.util.List;
 
@@ -86,5 +84,12 @@ public class ExceptionApiHandler {
     public ErrorResponse handleIncorrectParameterException(final BadRequestException e) {
         log.warn("BadRequestException. Message: {}, StackTrace: {}", e.getMessage(), e.getStackTrace());
         return new ErrorResponse(e.getParameter(), "Bad request", BAD_REQUEST.toString());
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ErrorResponse serviceUnavailable(ServiceUnavailableException e) {
+        log.warn("ServiceUnavailableException exception. Message: {}, StackTrace: {}", e.getMessage(), e.getStackTrace());
+        return new ErrorResponse(e.getMessage(), "Service unavailable", SERVICE_UNAVAILABLE.toString());
     }
 }

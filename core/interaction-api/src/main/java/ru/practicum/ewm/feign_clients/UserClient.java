@@ -5,10 +5,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.practicum.ewm.dto.user.UserDto;
+import ru.practicum.ewm.resilience.UserFeignClientFallback;
 
 import java.util.List;
 
-@FeignClient(name = "user-service")
+@FeignClient(name = "user-service", fallback = UserFeignClientFallback.class)
 public interface UserClient {
     @GetMapping("user/{userId}")
     UserDto getUserById(@PathVariable Long userId);
