@@ -1,10 +1,11 @@
 server:
-  port: 9090
+  port: 0
 spring:
   sql:
     init:
       mode: always
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: none
     properties:
@@ -16,7 +17,7 @@ spring:
             non_contextual_creation: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/statistic
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/ewm_users
     username: admin
     password: admin
