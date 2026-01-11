@@ -33,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.time.LocalDateTime.now;
+import static java.time.format.DateTimeFormatter.*;
 import static ru.practicum.ewm.model.event.AdminEventAction.REJECT_EVENT;
 import static ru.practicum.ewm.model.request.RequestStatus.CONFIRMED;
 
@@ -398,7 +399,7 @@ public class EventService {
 
     private List<HashMap<Object, Object>> getStats(List<String> uris) {
         return (List<HashMap<Object, Object>>) statsClient.getStats("2000-01-01 00:00:00",
-                now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                now().format(ofPattern("yyyy-MM-dd HH:mm:ss")),
                 uris, false).getBody();
     }
 
