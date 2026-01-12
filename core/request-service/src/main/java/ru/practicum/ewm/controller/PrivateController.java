@@ -1,8 +1,9 @@
 package ru.practicum.ewm.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.ewm.client.CollectorClient;
 import ru.practicum.ewm.dto.request.RequestDto;
 import ru.practicum.ewm.dto.request.RequestStatusUpdateRequest;
 import ru.practicum.ewm.dto.request.RequestStatusUpdateResponse;
@@ -12,14 +13,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/users")
+@RequiredArgsConstructor
 public class PrivateController {
 
     private final RequestService requestService;
-
-    @Autowired
-    public PrivateController(RequestService requestService) {
-        this.requestService = requestService;
-    }
+    private final CollectorClient collectorClient;
 
     //requests
     @GetMapping("/{userId}/requests")
@@ -31,6 +29,7 @@ public class PrivateController {
     @PostMapping("/{userId}/requests")
     @ResponseStatus(HttpStatus.CREATED)
     public RequestDto createRequest(@PathVariable Long userId, @RequestParam Long eventId) {
+        collectorClient.sendEventRegistration(userId, eventId);
         return requestService.create(userId, eventId);
     }
 

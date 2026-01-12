@@ -12,6 +12,7 @@ import ru.practicum.ewm.model.request.RequestStatus;
 import ru.practicum.ewm.model.user.User;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -110,6 +111,20 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findAllEventsWithStatusBetweenDates(String text, Instant startDateTime, Instant endDateTime,
                                                     List<Long> categoriesIds, EventState state,
                                                     Pageable pageable, boolean isPaid);
+
+    @Query("SELECT e FROM Event AS e " +
+            "WHERE ((:text IS NULL OR :text = '') " +
+            "OR UPPER(e.annotation) LIKE UPPER(CONCAT('%', :text, '%')) " +
+            "OR UPPER(e.description) LIKE UPPER(CONCAT('%', :text, '%'))) " +
+            "AND ((:categories) IS NULL OR e.category.id IN :categories) " +
+            "AND ((:paid) IS NULL OR e.isPaid = :paid) " +
+            "AND (e.eventDateTime >= :rangeStart) " +
+            "AND (e.eventDateTime <= :rangeEnd) " +
+            "AND ( e.state = :eventState) " +
+            "AND ((:onlyAvailable) IS NULL OR (:onlyAvailable) = false OR (e.participantLimit = 0))")
+    List<Event> findEventsPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
+                                 LocalDateTime rangeEnd, EventState eventState,
+                                 Boolean onlyAvailable, Pageable pageable);
 
 }
 

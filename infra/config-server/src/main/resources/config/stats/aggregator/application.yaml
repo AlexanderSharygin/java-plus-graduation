@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: aggregator
+
+kafka:
+  producer:
+    uri: localhost:9092
+    key-serializer: org.apache.kafka.common.serialization.VoidSerializer
+    value-serializer: ru.yandex.practicum.kafka.serializer.GeneralAvroSerializer
+
+  consumer:
+    uri: localhost:9092
+    group-id: actions.aggregator
+    auto-offset-reset: earliest
+    enable-auto-commit: true
+    consume-attempt-timeout-ms: 500
+    key-deserializer: org.apache.kafka.common.serialization.VoidDeserializer
+    value-deserializer: ru.yandex.practicum.kafka.deserializer.UserActionDeserializer
+
+  topics:
+    consumer-topic: stats.user-actions.v1
+    producer-topic: stats.events-similarity.v1

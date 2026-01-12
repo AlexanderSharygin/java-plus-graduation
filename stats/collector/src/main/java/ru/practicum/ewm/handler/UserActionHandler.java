@@ -1,7 +1,6 @@
 package ru.practicum.ewm.handler;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.config.KafkaConfig;
 import ru.practicum.ewm.config.KafkaTopic;
@@ -23,7 +22,6 @@ public class UserActionHandler {
     public void collectUserAction(UserActionProto request) {
         String topic = kafkaConfig.getTopic(KafkaTopic.ACTIONS.getTopicName());
         UserActionAvro userActionAvro = mapProtoToUserActionAvro(request);
-        ProducerRecord<String, UserActionAvro> userActionRecord = new ProducerRecord<>(topic, userActionAvro);
         producer.send(userActionAvro, topic);
     }
 
