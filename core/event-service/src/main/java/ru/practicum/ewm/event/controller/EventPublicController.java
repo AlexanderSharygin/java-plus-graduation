@@ -5,15 +5,11 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.client.CollectorClient;
-import ru.practicum.ewm.client.StatsClient;
-import ru.practicum.ewm.dto.HitDto;
+import ru.practicum.ewm.CollectorClient;
 import ru.practicum.ewm.dto.event.EventDto;
 import ru.practicum.ewm.dto.event.EventShortDto;
-import ru.practicum.ewm.dto.event.RecommendationDto;
 import ru.practicum.ewm.event.service.EventService;
 
 import java.time.LocalDateTime;

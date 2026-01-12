@@ -1,4 +1,4 @@
-package ru.practicum.ewm.client;
+package ru.practicum.ewm;
 
 
 import com.google.protobuf.Timestamp;

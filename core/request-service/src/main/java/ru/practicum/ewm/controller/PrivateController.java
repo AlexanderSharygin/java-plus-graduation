@@ -3,7 +3,7 @@ package ru.practicum.ewm.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.client.CollectorClient;
+import ru.practicum.ewm.CollectorClient;
 import ru.practicum.ewm.dto.request.RequestDto;
 import ru.practicum.ewm.dto.request.RequestStatusUpdateRequest;
 import ru.practicum.ewm.dto.request.RequestStatusUpdateResponse;
