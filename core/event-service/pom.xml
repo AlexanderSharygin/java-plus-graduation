@@ -56,8 +56,8 @@
         </dependency>
 
         <dependency>
-            <groupId>ru.practicum.ewm.stats</groupId>
-            <artifactId>stats-client</artifactId>
+            <groupId>ru.practicum.ewm</groupId>
+            <artifactId>client</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
