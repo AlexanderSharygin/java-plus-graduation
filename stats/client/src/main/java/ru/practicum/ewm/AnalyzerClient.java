@@ -8,7 +8,6 @@ import ru.practicum.ewm.grpc.stats.recommendations.RecommendedEventProto;
 import ru.practicum.ewm.grpc.stats.recommendations.SimilarEventsRequestProto;
 import ru.practicum.ewm.grpc.stats.recommendations.UserPredictionsRequestProto;
 
-
 import java.util.*;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;

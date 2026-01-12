@@ -102,8 +102,8 @@
         </dependency>
         <dependency>
             <groupId>ru.practicum.ewm</groupId>
-            <artifactId>stats-client</artifactId>
-            <version>${project.version}</version>
+            <artifactId>client</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

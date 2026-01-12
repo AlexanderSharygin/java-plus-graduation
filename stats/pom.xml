@@ -13,11 +13,11 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>stats-client</module>
         <module>serialization</module>
         <module>collector</module>
         <module>analyzer</module>
         <module>aggregator</module>
+        <module>client</module>
     </modules>
 
 </project>

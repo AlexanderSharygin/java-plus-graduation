@@ -1,9 +1,9 @@
 package ru.practicum.ewm.compilation.service;
 
+import ru.practicum.ewm.AnalyzerClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.AnalyzerClient;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
 import ru.practicum.ewm.dto.compilation.CompilationDto;
 import ru.practicum.ewm.dto.compilation.CompilationRequestDto;
