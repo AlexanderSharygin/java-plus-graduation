@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>ru.practicum.ewm</groupId>
-            <artifactId>proto-schemas</artifactId>
+            <artifactId>proto</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
