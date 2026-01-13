@@ -24,7 +24,7 @@ public class KafkaProducerConfig {
     private String valueSerializer;
 
     @Bean
-    public KafkaProducer<String, SpecificRecordBase> kafkaProducer() {
+    public KafkaProducer<String, SpecificRecordBase> customKafkaProducer() {
         Properties config = new Properties();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, uri);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializer);
