@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS event_similarity(
     event_a BIGINT,
     event_b BIGINT,
     score BIGINT,
-    event_time TIMESTAMP WITHOUT TIME ZONE,
+    event_time TIMESTAMP WITHOUT TIME ZONE
 );
