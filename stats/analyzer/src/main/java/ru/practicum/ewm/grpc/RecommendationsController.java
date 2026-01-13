@@ -5,6 +5,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.devh.boot.grpc.server.service.GrpcService;
 import ru.practicum.ewm.grpc.stats.dashboard.RecommendationsControllerGrpc;
 import ru.practicum.ewm.grpc.stats.recommendations.InteractionsCountRequestProto;
 import ru.practicum.ewm.grpc.stats.recommendations.RecommendedEventProto;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
+@GrpcService
 public class RecommendationsController extends RecommendationsControllerGrpc.RecommendationsControllerImplBase {
 
     private final EventSimilarityService service;
