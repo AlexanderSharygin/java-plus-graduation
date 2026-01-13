@@ -25,37 +25,28 @@ spring:
     username: admin
     password: admin
 
-kafka:
-  consumers:
-    actions:
-      uri: localhost:9092
-      group-id: actions.analyzer
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      consume-attempt-timeout-ms: 100
-      key-deserializer: org.apache.kafka.common.serialization.VoidDeserializer
-      value-deserializer: ru.practicum.ewm.deserializer.UserActionDeserializer
-    similarity:
-      uri: localhost:9092
-      group-id: similarity.analyzer
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      consume-attempt-timeout-ms: 100
-      key-deserializer: org.apache.kafka.common.serialization.VoidDeserializer
-      value-deserializer: ru.practicum.ewm.deserializer.EventSimilarityDeserializer
-
-  topics:
-    actions:
-      - stats.user-actions.v1
-    similarity:
-      - stats.events-similarity.v1
-
 grpc:
   server:
     port: 0
-  client:
-    hub-router:
-      address: 'static://localhost:59090'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
+
+analyzer:
+  user-consumer-properties:
+    bootstrap.servers: localhost:9092
+    group.id: user.analyzing
+    client.id: hubConsumer
+    key.deserializer: org.apache.kafka.common.serialization.VoidDeserializer
+    value.deserializer: ru.practicum.ewm.deserializer.UserActionDeserializer
+    enable.auto.commit: false
+  user-topics:
+    - stats.user-actions.v1
+
+  similarity-consumer-properties:
+    bootstrap.servers: localhost:9092
+    group.id: similarity.analyzing
+    client.id: snapshotConsumer
+    key.deserializer: org.apache.kafka.common.serialization.VoidDeserializer
+    value.deserializer: ru.practicum.ewm.deserializer.EventSimilarityDeserializer
+    enable.auto.commit: false
+  similarity-topics:
+    - stats.events-similarity.v1
+  consume-attempt-timeout: 1000
