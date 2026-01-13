@@ -107,11 +107,6 @@
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
             <version>3.1.2</version>
         </dependency>
-        <dependency>
-            <groupId>ru.practicum.ewm</groupId>
-            <artifactId>client</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
     <build>
