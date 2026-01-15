@@ -3,6 +3,7 @@ package ru.practicum.ewm.grpc;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 
+import net.devh.boot.grpc.server.service.GrpcService;
 import ru.practicum.ewm.grpc.stats.analyzer.RecommendationsControllerGrpc;
 import ru.practicum.ewm.grpc.stats.recommendations.InteractionsCountRequestProto;
 import ru.practicum.ewm.grpc.stats.recommendations.RecommendedEventProto;
@@ -13,6 +14,7 @@ import ru.practicum.ewm.service.EventSimilarityService;
 
 import java.util.List;
 
+@GrpcService
 @RequiredArgsConstructor
 public class RecommendationsController extends RecommendationsControllerGrpc.RecommendationsControllerImplBase {
 
