@@ -2,7 +2,8 @@ package ru.practicum.ewm;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
-import ru.practicum.ewm.grpc.stats.dashboard.RecommendationsControllerGrpc;
+
+import ru.practicum.ewm.grpc.stats.analyzer.RecommendationsControllerGrpc;
 import ru.practicum.ewm.grpc.stats.recommendations.InteractionsCountRequestProto;
 import ru.practicum.ewm.grpc.stats.recommendations.RecommendedEventProto;
 import ru.practicum.ewm.grpc.stats.recommendations.SimilarEventsRequestProto;
