@@ -1,7 +1,7 @@
 syntax = "proto3";
 package stats.service.dashboard;
 
-option java_package = "ru.practicum.ewm.grpc.stats.dashboard";
+option java_package = "ru.practicum.ewm.grpc.stats.analyzer";
 
 import "stats/messages/recommendations.proto";
 
