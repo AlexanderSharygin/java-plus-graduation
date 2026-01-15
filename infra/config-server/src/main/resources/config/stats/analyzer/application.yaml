@@ -15,14 +15,6 @@ spring:
     username: admin
     password: admin
 
-grpc:
-  client:
-    hub-router:
-      address: 'static://localhost:59090'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
-
 server:
   port: 0
 
