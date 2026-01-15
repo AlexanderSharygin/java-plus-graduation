@@ -1,10 +1,8 @@
 package ru.practicum.ewm.model;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
@@ -26,6 +24,6 @@ public class EventSimilarity {
     private Long eventB;
     @PositiveOrZero
     private Double score;
-    @Column(name = "timestamp")
-    private LocalDateTime timestamp;
+
+    private Instant eventTime;
 }

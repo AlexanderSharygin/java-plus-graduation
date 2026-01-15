@@ -23,6 +23,5 @@ public class UserAction {
     private Long eventId;
     @Enumerated(EnumType.STRING)
     private ActionType actionType;
-    @Column(name = "timestamp")
-    private LocalDateTime timestamp;
+    private Instant actionTime;
 }
