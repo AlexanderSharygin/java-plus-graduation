@@ -1,5 +1,5 @@
 syntax = "proto3";
-package stats.service.dashboard;
+package stats.service.analyzer;
 
 option java_package = "ru.practicum.ewm.grpc.stats.analyzer";
 
