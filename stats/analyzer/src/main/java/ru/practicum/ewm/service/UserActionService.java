@@ -17,6 +17,7 @@ public class UserActionService {
 
     public void saveActionType(UserActionAvro userActionAvro) {
         UserAction userAction = new UserAction();
+        userAction.setId(-1L);
         userAction.setUserId(userAction.getUserId());
         userAction.setEventId(userAction.getEventId());
         userAction.setActionType(ActionType.valueOf(userActionAvro.getActionType().name()));

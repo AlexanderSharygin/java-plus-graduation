@@ -23,6 +23,7 @@ public class EventSimilarityService {
 
     public void saveEventSimilarity(EventSimilarityAvro eventSimilarityAvro) {
         EventSimilarity eventSimilarity = new EventSimilarity();
+        eventSimilarity.setId(-1L);
         eventSimilarity.setEventA(eventSimilarityAvro.getEventA());
         eventSimilarity.setEventB(eventSimilarityAvro.getEventB());
         eventSimilarity.setScore(eventSimilarityAvro.getScore());
