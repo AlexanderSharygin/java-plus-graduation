@@ -17,7 +17,6 @@ import java.util.List;
 public class PrivateController {
 
     private final RequestService requestService;
-   // private final CollectorClient collectorClient;
 
     //requests
     @GetMapping("/{userId}/requests")
@@ -29,7 +28,6 @@ public class PrivateController {
     @PostMapping("/{userId}/requests")
     @ResponseStatus(HttpStatus.CREATED)
     public RequestDto createRequest(@PathVariable Long userId, @RequestParam Long eventId) {
-       // collectorClient.sendEventRegistration(userId, eventId);
         return requestService.create(userId, eventId);
     }
 

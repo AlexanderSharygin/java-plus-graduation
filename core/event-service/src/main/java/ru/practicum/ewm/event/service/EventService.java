@@ -28,6 +28,7 @@ import ru.practicum.ewm.model.event.EventState;
 import ru.practicum.ewm.model.event.Location;
 import ru.practicum.ewm.model.user.User;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -245,8 +246,8 @@ public class EventService {
     public List<EventShortDto> getAllShort(String text, List<Long> categories, Boolean paid,
                                            LocalDateTime rangeStart, LocalDateTime rangeEnd, boolean onlyAvailable,
                                            String sort, int from, int size) {
-        LocalDateTime start = (rangeStart == null) ? LocalDateTime.now() : rangeStart;
-        LocalDateTime end = (rangeEnd == null) ? LocalDateTime.now().plusYears(10) : rangeEnd;
+        Instant start = (rangeStart == null) ? LocalDateTime.now().toInstant(ZoneOffset.UTC) : rangeStart.toInstant(ZoneOffset.UTC);
+        Instant end = (rangeEnd == null) ? LocalDateTime.now().plusYears(10).toInstant(ZoneOffset.UTC) : rangeEnd.toInstant(ZoneOffset.UTC);
 
         if (start.isAfter(end))
             throw new BadRequestException("Дата окончания, должна быть больше даты старта.");

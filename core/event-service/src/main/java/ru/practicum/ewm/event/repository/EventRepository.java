@@ -122,8 +122,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (e.eventDateTime <= :rangeEnd) " +
             "AND ( e.state = :eventState) " +
             "AND ((:onlyAvailable) IS NULL OR (:onlyAvailable) = false OR (e.participantLimit = 0))")
-    List<Event> findEventsPublic(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
-                                 LocalDateTime rangeEnd, EventState eventState,
+    List<Event> findEventsPublic(String text, List<Long> categories, Boolean paid, Instant rangeStart,
+                                 Instant rangeEnd, EventState eventState,
                                  Boolean onlyAvailable, Pageable pageable);
 
 }
