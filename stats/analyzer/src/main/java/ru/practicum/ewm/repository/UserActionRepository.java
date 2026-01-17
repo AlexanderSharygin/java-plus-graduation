@@ -1,12 +1,17 @@
 package ru.practicum.ewm.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.practicum.ewm.model.UserAction;
+import ru.practicum.ewm.models.UserAction;
+
 
 import java.util.List;
 
 public interface UserActionRepository extends JpaRepository<UserAction, Long> {
-    List<UserAction> findAllByUserId(Long userId);
+    List<UserAction> findByUserId(Long userId);
 
-    List<UserAction> findAllByEventId(Long eventId);
+    boolean existsByUserIdAndEventId(Long userId, Long eventId);
+
+    List<UserAction> findByEventId(Long eventId);
+
+    List<UserAction> findByUserIdAndEventId(Long userId, Long eventId);
 }

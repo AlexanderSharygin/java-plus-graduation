@@ -1,36 +1,31 @@
-package ru.practicum.ewm.model;
+package ru.practicum.ewm.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "similarities")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class EventSimilarity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
     @Column(name = "event_a")
     private Long eventA;
 
-    @NotNull
     @Column(name = "event_b")
     private Long eventB;
 
-    @PositiveOrZero
     @Column(name = "score")
-    private Double score;  // Оставляем Double
+    private Double score;
 
-    @Column(name = "event_time")
-    private Instant eventTime;  // Оставляем Instant
+    @Column(name = "timestamp")
+    private LocalDateTime timestamp;
 }

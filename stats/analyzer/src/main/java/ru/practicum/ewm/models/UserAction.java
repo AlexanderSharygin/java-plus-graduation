@@ -1,37 +1,32 @@
-package ru.practicum.ewm.model;
+package ru.practicum.ewm.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.checkerframework.checker.units.qual.A;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "actions")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class UserAction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Long id;
 
-    @NotNull
     @Column(name = "user_id")
     private Long userId;
 
-    @NotNull
     @Column(name = "event_id")
     private Long eventId;
 
+    @Column(name = "action")
     @Enumerated(EnumType.STRING)
-    @Column(name = "action_type", length = 16)
-    private ActionType actionType;
+    private UserActionType actionType;
 
-    @Column(name = "action_time")
-    private Instant actionTime;
+    @Column(name = "timestamp")
+    private LocalDateTime timestamp;
 }
