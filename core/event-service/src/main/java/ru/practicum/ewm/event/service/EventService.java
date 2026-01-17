@@ -1,12 +1,11 @@
 package ru.practicum.ewm.event.service;
 
-import ru.practicum.ewm.AnalyzerClient;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ru.practicum.ewm.AnalyzerClient;
 import ru.practicum.ewm.category.repository.EventCategoryRepository;
 import ru.practicum.ewm.dto.event.*;
 import ru.practicum.ewm.dto.request.RequestDto;
@@ -32,6 +31,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.time.LocalDateTime.now;
 import static ru.practicum.ewm.model.event.AdminEventAction.REJECT_EVENT;
@@ -246,16 +246,29 @@ public class EventService {
     public List<EventShortDto> getAllShort(String text, List<Long> categories, Boolean paid,
                                            LocalDateTime rangeStart, LocalDateTime rangeEnd, boolean onlyAvailable,
                                            String sort, int from, int size) {
-        Instant start = (rangeStart == null) ? LocalDateTime.now().toInstant(ZoneOffset.UTC) : rangeStart.toInstant(ZoneOffset.UTC);
-        Instant end = (rangeEnd == null) ? LocalDateTime.now().plusYears(10).toInstant(ZoneOffset.UTC) : rangeEnd.toInstant(ZoneOffset.UTC);
+        Instant start = (rangeStart == null)
+                ? LocalDateTime.now().toInstant(ZoneOffset.UTC)
+                : rangeStart.toInstant(ZoneOffset.UTC);
+        Instant end = (rangeEnd == null)
+                ? LocalDateTime.now().plusYears(10).toInstant(ZoneOffset.UTC)
+                : rangeEnd.toInstant(ZoneOffset.UTC);
 
         if (start.isAfter(end))
             throw new BadRequestException("Дата окончания, должна быть больше даты старта.");
         List<Event> events = eventRepository.findEventsPublic(text, categories, paid, start, end,
                 EventState.PUBLISHED, onlyAvailable, PageRequest.of(from / size, size)
         );
+        List<EventShortDto> eventDtos = getEventsShorts(events.stream().toList());
+        if (sort != null) {
+            switch (sort) {
+                case "EVENT_DATE" ->
+                        eventDtos = eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getEventDate)).toList();
+                case "VIEWS" ->
+                        eventDtos = eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getRating)).toList();
+            }
+        }
 
-        return getEventsShorts(events.stream().toList());
+        return eventDtos;
     }
 
     public List<EventShortDto> getByUserId(Long userId, Pageable paging) {
@@ -287,18 +300,14 @@ public class EventService {
 
     public Map<Long, Long> getConfirmedRequestsCountForEvents(List<Event> events) {
         List<RequestDto> requests = requestClient.getConfirmedRequestsForEvent(new ArrayList<>(events));
-        Set<Long> requestsIds = new HashSet<>();
-        for (var request : requests) {
-            requestsIds.add(request.getEvent());
-        }
-        Map<Long, Long> confirmedRequestsCountForEvents = new HashMap<>();
-        for (var id : requestsIds) {
-            int count = (int) requests.stream()
-                    .filter(k -> Objects.equals(k.getEvent(), id)).count();
-            confirmedRequestsCountForEvents.put(id, (long) count);
-        }
-
-        return confirmedRequestsCountForEvents;
+        Set<Long> requestsIds = requests.stream().map(RequestDto::getEvent)
+                .collect(Collectors.toSet());
+        return requestsIds.stream().collect(Collectors.toMap(
+                id -> id, // key - id события
+                id -> requests.stream()
+                        .filter(request -> Objects.equals(request.getEvent(), id))
+                        .count()
+        ));
     }
 
     private Location saveLocation(Location location) {
@@ -333,7 +342,6 @@ public class EventService {
 
     private EventDto getEventDtoFromEvent(Event event) {
         long confirmedRequests = requestClient.getConfirmedRequestsForEvent(List.of(event)).size();
-
         User owner = UserMapper.toUserFromUserDto(userClient.getUserById(event.getOwnerId()));
 
         return EventMapper.fromEventToEventDto(event,
@@ -388,25 +396,23 @@ public class EventService {
     public void likeEvent(Long eventId, Long userId) {
         Event event = getEventIfExist(eventId);
         List<RequestDto> requests = requestClient.getConfirmedRequestsForEvent(List.of(event))
-                .stream().filter(k -> k.getRequester() == userId).toList();
+                .stream().filter(k -> k.getRequester() == userId)
+                .toList();
         if (requests.isEmpty()) {
-            throw new ValidationException("Event not found");
+            throw new NotFoundException("Request to event with id " + eventId + " not found for user " + userId);
         }
-
-
     }
 
     public List<EventDto> getRecommendations(Long userId, long maxResults) {
         List<Long> ids = analyzerClient.getRecommendationsForUser(userId, maxResults).stream()
-                .sorted((a, b) -> (int) (a.getScore() - b.getScore()))
-                .map(RecommendedEventProto::getEventId).toList();
+                .sorted((itemA, itemB) -> (int) (itemA.getScore() - itemB.getScore()))
+                .map(RecommendedEventProto::getEventId)
+                .toList();
         List<Event> events = eventRepository.findAllById(ids);
         List<Long> eventIds = getEventsIdFromEventsList(events);
-        Map<Long, Long> eventsOwnersId = new HashMap<>();
-        for (var event : events) {
-            eventsOwnersId.put(event.getId(), event.getOwnerId());
-        }
+        Map<Long, Long> eventsOwnersId = events.stream().collect(Collectors.toMap(Event::getId, Event::getOwnerId, (a, b) -> b));
         List<UserDto> owners = userClient.getUsers(eventsOwnersId.values().stream().toList());
+
         Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
         Map<Long, Double> viewsMap = analyzerClient.getInteractionsCount(new ArrayList<>(eventIds));
 

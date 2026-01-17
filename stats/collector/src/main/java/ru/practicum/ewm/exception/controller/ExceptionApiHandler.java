@@ -22,12 +22,10 @@ public class ExceptionApiHandler {
         return new ErrorResponse(e.getMessage(), "Validation error", BAD_REQUEST.toString());
     }
 
-
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleOtherExceptions(final Throwable e) {
         log.warn("Unknown error. Message: {}, StackTrace: {}", e.getMessage(), e.getStackTrace());
-
         return new ErrorResponse(e.getMessage(), "Unknown error", HttpStatus.INTERNAL_SERVER_ERROR.toString());
     }
 
@@ -35,7 +33,6 @@ public class ExceptionApiHandler {
     @ResponseStatus(BAD_REQUEST)
     public ErrorResponse handleMIllegalArgumentException(final Throwable e) {
         log.warn("IllegalArgumentException. Message: {}, StackTrace: {}", e.getMessage(), e.getStackTrace());
-        return new ErrorResponse(e.getMessage(), "Wrong evetn type", BAD_REQUEST.toString());
+        return new ErrorResponse(e.getMessage(), "Bad request", BAD_REQUEST.toString());
     }
-
 }
