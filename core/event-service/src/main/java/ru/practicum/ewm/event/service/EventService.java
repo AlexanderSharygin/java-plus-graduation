@@ -4,10 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.ewm.AnalyzerClient;
 import ru.practicum.ewm.category.repository.EventCategoryRepository;
-import ru.practicum.ewm.client.StatsClient;
 import ru.practicum.ewm.dto.event.*;
 import ru.practicum.ewm.dto.request.RequestDto;
 import ru.practicum.ewm.dto.user.UserDto;
@@ -18,6 +17,7 @@ import ru.practicum.ewm.exception.ConflictException;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.feign_clients.RequestClient;
 import ru.practicum.ewm.feign_clients.UserClient;
+import ru.practicum.ewm.grpc.stats.recommendations.RecommendedEventProto;
 import ru.practicum.ewm.mapper.event.EventCategoryMapper;
 import ru.practicum.ewm.mapper.event.EventMapper;
 import ru.practicum.ewm.mapper.user.UserMapper;
@@ -27,14 +27,14 @@ import ru.practicum.ewm.model.event.EventState;
 import ru.practicum.ewm.model.event.Location;
 import ru.practicum.ewm.model.user.User;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.time.LocalDateTime.now;
 import static ru.practicum.ewm.model.event.AdminEventAction.REJECT_EVENT;
-import static ru.practicum.ewm.model.request.RequestStatus.CONFIRMED;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class EventService {
     private final LocationRepository locationRepository;
     private final RequestClient requestClient;
     private final UserClient userClient;
-    private final StatsClient statsClient;
+    private final AnalyzerClient analyzerClient;
 
 
     public EventDto create(CreateNewEventDto eventDto, Long userId) {
@@ -76,7 +76,7 @@ public class EventService {
         Event result = eventRepository.save(event);
 
         return EventMapper.fromEventToEventDto(result, EventCategoryMapper.toCategoryDtoFromCategory(category),
-                UserMapper.fromUserToUserShortDto(owner), 0L, 0);
+                UserMapper.fromUserToUserShortDto(owner), 0L, 0d);
     }
 
     public EventDto updateByAdmin(Long eventId, UpdateEventAdminDto updateEventDto) {
@@ -126,8 +126,10 @@ public class EventService {
         Location savedLOcation = saveLocation(location);
         event.setLocation(savedLOcation);
         Event updatedEvent = eventRepository.save(event);
-
-        return getEventDtoFromEvent(updatedEvent);
+        Map<Long, Double> ratingMap = analyzerClient.getInteractionsCount(List.of(eventId));
+        EventDto eventDto = getEventDtoFromEvent(updatedEvent);
+        eventDto.setRating(ratingMap.get(eventId));
+        return eventDto;
     }
 
 
@@ -174,9 +176,9 @@ public class EventService {
         if (event.getPublishedOn() == null) {
             throw new NotFoundException("Событие с id" + eventId + " ещё не опубликовано");
         }
-        Integer views = getEventsViews(event.getId()) + 1;
+        Map<Long, Double> ratingMap = analyzerClient.getInteractionsCount(List.of(eventId));
         EventDto eventDto = getEventDtoFromEvent(event);
-        eventDto.setViews(views);
+        eventDto.setRating(ratingMap.get(eventId));
 
         return eventDto;
     }
@@ -186,16 +188,6 @@ public class EventService {
         return eventRepository.findAllByIdIn(eventIds).stream()
                 .map(k -> EventMapper.fromEventToEventCommentDto(k, EventCategoryMapper.toCategoryDtoFromCategory(k.getCategory())))
                 .toList();
-    }
-
-    public Integer getEventsViews(Long eventId) {
-        List<String> uris = List.of("/events/" + eventId);
-        List<HashMap<Object, Object>> stats = getStats(uris);
-        if (stats != null && !stats.isEmpty()) {
-            return (Integer) stats.getFirst().get("hits");
-        } else {
-            return 0;
-        }
     }
 
     public EventDto updateByUser(UpdateEventUserRequest eventDto, Long userId, Long eventId) {
@@ -244,51 +236,39 @@ public class EventService {
         if (eventDto.getTitle() != null && !eventDto.getTitle().isBlank()) {
             event.setTitle(eventDto.getTitle());
         }
+        Map<Long, Double> ratingMap = analyzerClient.getInteractionsCount(List.of(eventId));
+        EventDto result = getEventDtoFromEvent(event);
+        result.setRating(ratingMap.get(eventId));
 
-        return getEventDtoFromEvent(event);
+        return result;
     }
 
     public List<EventShortDto> getAllShort(String text, List<Long> categories, Boolean paid,
                                            LocalDateTime rangeStart, LocalDateTime rangeEnd, boolean onlyAvailable,
                                            String sort, int from, int size) {
-        Page<Event> events;
-        Pageable paging;
-        if (sort == null) {
-            paging = PageRequest.of(from, size);
-        } else {
-            if (sort.equals("VIEWS") || sort.equals("EVENT_DATE") || sort.isBlank()) {
-                if (sort.equals("EVENT_DATE")) {
-                    paging = PageRequest.of((from) % size, size, Sort.by("eventDateTime")
-                            .descending());
-                } else {
-                    paging = PageRequest.of(from, size);
-                }
-            } else {
-                throw new ConflictException("Неверная сортировка. Используй VIEW or EVENT_DATE");
-            }
-        }
-        if (onlyAvailable) {
-            if (rangeStart == null || rangeEnd == null) {
-                events = eventRepository.findAllAvailablePublishedEventsByCategoryAndStateAfterDate(text,
-                        now().toInstant(ZoneOffset.UTC), categories, paging, EventState.PUBLISHED,
-                        CONFIRMED, paid);
-            } else {
-                events = eventRepository.findAllAvailablePublishedEventsByCategoryAndStateBetweenDates(text,
-                        rangeStart.toInstant(ZoneOffset.UTC), rangeEnd.toInstant(ZoneOffset.UTC), categories, paging,
-                        EventState.PUBLISHED, CONFIRMED, paid);
-            }
-        } else {
-            if (rangeStart == null || rangeEnd == null) {
-                events = eventRepository.findAllEventsWithStatusAfterDate(text, now().toInstant(ZoneOffset.UTC),
-                        categories, EventState.PUBLISHED, paging, paid);
-            } else {
-                events = eventRepository.findAllEventsWithStatusBetweenDates(text,
-                        rangeStart.toInstant(ZoneOffset.UTC), rangeEnd.toInstant(ZoneOffset.UTC), categories,
-                        EventState.PUBLISHED, paging, paid);
+        Instant start = (rangeStart == null)
+                ? LocalDateTime.now().toInstant(ZoneOffset.UTC)
+                : rangeStart.toInstant(ZoneOffset.UTC);
+        Instant end = (rangeEnd == null)
+                ? LocalDateTime.now().plusYears(10).toInstant(ZoneOffset.UTC)
+                : rangeEnd.toInstant(ZoneOffset.UTC);
+
+        if (start.isAfter(end))
+            throw new BadRequestException("Дата окончания, должна быть больше даты старта.");
+        List<Event> events = eventRepository.findEventsPublic(text, categories, paid, start, end,
+                EventState.PUBLISHED, onlyAvailable, PageRequest.of(from / size, size)
+        );
+        List<EventShortDto> eventDtos = getEventsShorts(events.stream().toList());
+        if (sort != null) {
+            switch (sort) {
+                case "EVENT_DATE" ->
+                        eventDtos = eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getEventDate)).toList();
+                case "VIEWS" ->
+                        eventDtos = eventDtos.stream().sorted(Comparator.comparing(EventShortDto::getRating)).toList();
             }
         }
 
-        return getEventsShorts(events.stream().toList());
+        return eventDtos;
     }
 
     public List<EventShortDto> getByUserId(Long userId, Pageable paging) {
@@ -305,7 +285,11 @@ public class EventService {
         if (!Objects.equals(event.getOwnerId(), userId)) {
             throw new NotFoundException("User с id " + userId + " не хозяин события " + eventId);
         }
-        return getEventDtoFromEvent(event);
+        Map<Long, Double> ratingMap = analyzerClient.getInteractionsCount(List.of(eventId));
+        EventDto eventDto = getEventDtoFromEvent(event);
+        eventDto.setRating(ratingMap.get(eventId));
+
+        return eventDto;
     }
 
     public Event getEventIfExist(long eventId) {
@@ -314,44 +298,16 @@ public class EventService {
                 .orElseThrow(() -> new NotFoundException("Событие с id " + eventId + " не существует!"));
     }
 
-    public Map<Long, Integer> getEventsViewsMap(List<Long> eventsIds) {
-        List<String> uris = new ArrayList<>();
-        for (Long eventId : eventsIds) {
-            uris.add("/events/" + eventId);
-        }
-        List<HashMap<Object, Object>> stats = getStats(uris);
-        Map<Long, Integer> eventViewsMap = new HashMap<>();
-        if (stats != null && !stats.isEmpty()) {
-            for (var map : stats) {
-                String uri = (String) map.get("uri");
-                String[] urisAsArr = uri.split("/");
-                Long id = Long.parseLong(urisAsArr[urisAsArr.length - 1]);
-                eventViewsMap.put(id, (Integer) map.get("hits"));
-            }
-        }
-        for (Long id : eventsIds) {
-            if (!eventViewsMap.containsKey(id)) {
-                eventViewsMap.put(id, 0);
-            }
-        }
-
-        return eventViewsMap;
-    }
-
     public Map<Long, Long> getConfirmedRequestsCountForEvents(List<Event> events) {
         List<RequestDto> requests = requestClient.getConfirmedRequestsForEvent(new ArrayList<>(events));
-        Set<Long> requestsIds = new HashSet<>();
-        for (var request : requests) {
-            requestsIds.add(request.getEvent());
-        }
-        Map<Long, Long> confirmedRequestsCountForEvents = new HashMap<>();
-        for (var id : requestsIds) {
-            int count = (int) requests.stream()
-                    .filter(k -> Objects.equals(k.getEvent(), id)).count();
-            confirmedRequestsCountForEvents.put(id, (long) count);
-        }
-
-        return confirmedRequestsCountForEvents;
+        Set<Long> requestsIds = requests.stream().map(RequestDto::getEvent)
+                .collect(Collectors.toSet());
+        return requestsIds.stream().collect(Collectors.toMap(
+                id -> id, // key - id события
+                id -> requests.stream()
+                        .filter(request -> Objects.equals(request.getEvent(), id))
+                        .count()
+        ));
     }
 
     private Location saveLocation(Location location) {
@@ -386,20 +342,13 @@ public class EventService {
 
     private EventDto getEventDtoFromEvent(Event event) {
         long confirmedRequests = requestClient.getConfirmedRequestsForEvent(List.of(event)).size();
-        Integer views = getEventsViews(event.getId());
         User owner = UserMapper.toUserFromUserDto(userClient.getUserById(event.getOwnerId()));
 
         return EventMapper.fromEventToEventDto(event,
                 EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
                 UserMapper.fromUserToUserShortDto(owner),
                 confirmedRequests,
-                views);
-    }
-
-    private List<HashMap<Object, Object>> getStats(List<String> uris) {
-        return (List<HashMap<Object, Object>>) statsClient.getStats("2000-01-01 00:00:00",
-                now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                uris, false).getBody();
+                0d);
     }
 
     private List<Long> getEventsIdFromEventsList(List<Event> events) {
@@ -409,7 +358,7 @@ public class EventService {
     private List<EventDto> getEventsFulls(List<Event> events) {
         List<Long> eventIds = getEventsIdFromEventsList(events);
         Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
-        Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
+        Map<Long, Double> viewsMap = analyzerClient.getInteractionsCount(new ArrayList<>(eventIds));
         Map<Long, Long> eventsOwnersId = new HashMap<>();
         for (var event : events) {
             eventsOwnersId.put(event.getId(), event.getOwnerId());
@@ -428,7 +377,7 @@ public class EventService {
     private List<EventShortDto> getEventsShorts(List<Event> events) {
         List<Long> eventIds = getEventsIdFromEventsList(events);
         Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
-        Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
+        Map<Long, Double> ratingMap = analyzerClient.getInteractionsCount(new ArrayList<>(eventIds));
         Map<Long, Long> eventsOwnersId = new HashMap<>();
         for (var event : events) {
             eventsOwnersId.put(event.getId(), event.getOwnerId());
@@ -440,6 +389,38 @@ public class EventService {
                 UserMapper.toUserShortDtoFromUserDto(Objects.requireNonNull(owners.stream()
                         .filter(k -> k.getId() == event.getOwnerId())
                         .findFirst().orElseThrow())),
+                confirmedRequestsCountForEvents.getOrDefault(event.getId(), 0L),
+                ratingMap.get(event.getId()))).toList();
+    }
+
+    public void likeEvent(Long eventId, Long userId) {
+        Event event = getEventIfExist(eventId);
+        List<RequestDto> requests = requestClient.getConfirmedRequestsForEvent(List.of(event))
+                .stream().filter(k -> k.getRequester() == userId)
+                .toList();
+        if (requests.isEmpty()) {
+            throw new NotFoundException("Request to event with id " + eventId + " not found for user " + userId);
+        }
+    }
+
+    public List<EventDto> getRecommendations(Long userId, long maxResults) {
+        List<Long> ids = analyzerClient.getRecommendationsForUser(userId, maxResults).stream()
+                .sorted((itemA, itemB) -> (int) (itemA.getScore() - itemB.getScore()))
+                .map(RecommendedEventProto::getEventId)
+                .toList();
+        List<Event> events = eventRepository.findAllById(ids);
+        List<Long> eventIds = getEventsIdFromEventsList(events);
+        Map<Long, Long> eventsOwnersId = events.stream().collect(Collectors.toMap(Event::getId, Event::getOwnerId, (a, b) -> b));
+        List<UserDto> owners = userClient.getUsers(eventsOwnersId.values().stream().toList());
+
+        Map<Long, Long> confirmedRequestsCountForEvents = getConfirmedRequestsCountForEvents(events);
+        Map<Long, Double> viewsMap = analyzerClient.getInteractionsCount(new ArrayList<>(eventIds));
+
+        return events.stream().map(event -> EventMapper.fromEventToEventDto(event,
+                EventCategoryMapper.toCategoryDtoFromCategory(event.getCategory()),
+                UserMapper.toUserShortDtoFromUserDto(Objects.requireNonNull(owners.stream()
+                        .filter(k -> k.getId() == event.getOwnerId())
+                        .findFirst().orElse(null))),
                 confirmedRequestsCountForEvents.getOrDefault(event.getId(), 0L),
                 viewsMap.get(event.getId()))).toList();
     }

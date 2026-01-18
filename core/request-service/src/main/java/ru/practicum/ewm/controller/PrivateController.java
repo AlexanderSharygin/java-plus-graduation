@@ -1,6 +1,7 @@
 package ru.practicum.ewm.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewm.dto.request.RequestDto;
@@ -12,14 +13,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/users")
+@RequiredArgsConstructor
 public class PrivateController {
 
     private final RequestService requestService;
-
-    @Autowired
-    public PrivateController(RequestService requestService) {
-        this.requestService = requestService;
-    }
 
     //requests
     @GetMapping("/{userId}/requests")

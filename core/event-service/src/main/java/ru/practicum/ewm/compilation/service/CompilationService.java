@@ -1,10 +1,9 @@
 package ru.practicum.ewm.compilation.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import ru.practicum.ewm.AnalyzerClient;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.client.StatsClient;
-import ru.practicum.ewm.mapper.compilation.CompilationMapper;
 import ru.practicum.ewm.compilation.repository.CompilationRepository;
 import ru.practicum.ewm.dto.compilation.CompilationDto;
 import ru.practicum.ewm.dto.compilation.CompilationRequestDto;
@@ -15,36 +14,25 @@ import ru.practicum.ewm.event.service.EventService;
 import ru.practicum.ewm.exception.BadRequestException;
 import ru.practicum.ewm.exception.NotFoundException;
 import ru.practicum.ewm.feign_clients.UserClient;
+import ru.practicum.ewm.mapper.compilation.CompilationMapper;
 import ru.practicum.ewm.mapper.event.EventCategoryMapper;
 import ru.practicum.ewm.mapper.event.EventMapper;
 import ru.practicum.ewm.mapper.user.UserMapper;
 import ru.practicum.ewm.model.compilation.Compilation;
 import ru.practicum.ewm.model.event.Event;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final EventService eventService;
-    private final StatsClient statClient;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final AnalyzerClient analyzerClient;
     private final UserClient userClient;
-
-    @Autowired
-    public CompilationService(CompilationRepository compilationRepository, EventRepository eventRepository,
-                              EventService eventService, StatsClient statClient, UserClient userClient) {
-        this.compilationRepository = compilationRepository;
-        this.eventRepository = eventRepository;
-        this.eventService = eventService;
-        this.statClient = statClient;
-        this.userClient = userClient;
-    }
 
     public List<CompilationDto> getAll(boolean pinned, Pageable pageable) {
         List<Compilation> compilations = compilationRepository
@@ -135,36 +123,11 @@ public class CompilationService {
         return CompilationMapper.toDtoFromCompilation(resultCompilation, eventShortDtos);
     }
 
-    public Map<Long, Integer> getEventsViewsMap(List<Long> eventsIds) {
-        List<String> uris = new ArrayList<>();
-        for (Long eventId : eventsIds) {
-            uris.add("/events/" + eventId);
-        }
-        List<HashMap<Object, Object>> stats = (List<HashMap<Object, Object>>) statClient.getStats(
-                "2000-01-01 00:00:00", LocalDateTime.now().format(formatter), uris, false).getBody();
-        Map<Long, Integer> eventViewsMap = new HashMap<>();
-        if (stats != null && !stats.isEmpty()) {
-            stats.forEach(map -> {
-                String uri = (String) map.get("uri");
-                String[] urisAsArr = uri.split("/");
-                Long id = Long.parseLong(urisAsArr[urisAsArr.length - 1]);
-                eventViewsMap.put(id, (Integer) map.get("hits"));
-            });
-        }
-        for (Long id : eventsIds) {
-            if (!eventViewsMap.containsKey(id)) {
-                eventViewsMap.put(id, 0);
-            }
-        }
-
-        return eventViewsMap;
-    }
-
     private Set<EventShortDto> getEventsShorts(Set<Event> events) {
         List<Long> eventIds = events.stream().map(Event::getId).toList();
         Map<Long, Long> confirmedRequestsCountForEvents = eventService
                 .getConfirmedRequestsCountForEvents(new ArrayList<>(events));
-        Map<Long, Integer> viewsMap = getEventsViewsMap(new ArrayList<>(eventIds));
+        Map<Long, Double> viewsMap = analyzerClient.getInteractionsCount(new ArrayList<>(eventIds));
 
         Map<Long, Long> eventsOwnersId = new HashMap<>();
         for (var event : events) {

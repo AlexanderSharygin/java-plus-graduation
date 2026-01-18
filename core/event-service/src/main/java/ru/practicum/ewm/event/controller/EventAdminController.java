@@ -4,12 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.client.StatsClient;
-import ru.practicum.ewm.dto.HitDto;
 import ru.practicum.ewm.dto.event.EventDto;
 import ru.practicum.ewm.dto.event.UpdateEventAdminDto;
 import ru.practicum.ewm.event.service.EventService;
@@ -19,15 +18,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/admin/events")
+@RequiredArgsConstructor
 public class EventAdminController {
-    private final StatsClient statClient;
     private final EventService eventService;
 
-    @Autowired
-    public EventAdminController(StatsClient statClient, EventService eventService) {
-        this.statClient = statClient;
-        this.eventService = eventService;
-    }
 
     @GetMapping
     public List<EventDto> getAll(@RequestParam(value = "users", required = false) List<Long> users,
@@ -40,7 +34,6 @@ public class EventAdminController {
                                  @PositiveOrZero @RequestParam(value = "from", defaultValue = "0") int from,
                                  @Positive @RequestParam(value = "size", defaultValue = "10") int size,
                                  HttpServletRequest request) {
-        statClient.create(new HitDto(request.getRemoteAddr(), "ewm-main", "/events", LocalDateTime.now()));
 
         return eventService.getAll(users, states, categories, rangeStart, rangeEnd, PageRequest.of(from, size));
     }

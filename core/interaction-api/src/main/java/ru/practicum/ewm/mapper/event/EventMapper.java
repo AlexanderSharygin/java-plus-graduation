@@ -61,7 +61,7 @@ public class EventMapper {
     }
 
     public static EventDto fromEventToEventDto(Event event, EventCategoryDto eventCategoryDto, UserShortDto owner,
-                                               Long confirmedRequests, Integer views) {
+                                               Long confirmedRequests, Double rating) {
         EventDto eventDto = new EventDto(event.getId(),
                 event.getAnnotation(),
                 eventCategoryDto,
@@ -77,7 +77,7 @@ public class EventMapper {
                 event.getIsModerated(),
                 event.getState(),
                 event.getTitle(),
-                views
+                rating
         );
         if (event.getPublishedOn() != null) {
             eventDto.setPublishedOn(ofInstant(event.getPublishedOn(), ZoneId.of("UTC")));
@@ -86,7 +86,7 @@ public class EventMapper {
     }
 
     public static EventShortDto fromEventToEventShortDto(Event event, EventCategoryDto eventCategoryDto, UserShortDto owner,
-                                                         Long confirmedRequests, Integer views) {
+                                                         Long confirmedRequests, Double rating) {
         return new EventShortDto(event.getId(),
                 event.getAnnotation(),
                 eventCategoryDto,
@@ -95,7 +95,7 @@ public class EventMapper {
                 owner,
                 event.getIsPaid(),
                 event.getTitle(),
-                views);
+                rating);
     }
 
     public static EventCommentDto fromEventToEventCommentDto(Event event, EventCategoryDto eventCategoryDto) {
