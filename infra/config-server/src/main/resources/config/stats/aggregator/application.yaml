@@ -2,7 +2,7 @@ spring:
   application:
     name: aggregator
 
-aggregator:
+kafka:
   producer-properties:
     bootstrap.servers: localhost:9092
     key.serializer: org.apache.kafka.common.serialization.VoidSerializer
@@ -11,11 +11,9 @@ aggregator:
 
   consumer-properties:
     bootstrap.servers: localhost:9092
-    group.id: some.group.id
-    client.id: SomeConsumer
+    group.id: aggregator.group.id
     key.deserializer: org.apache.kafka.common.serialization.VoidDeserializer
     value.deserializer: ru.practicum.ewm.deserializer.UserActionDeserializer
     enable.auto.commit: false
-  consumer-topic:
-    - stats.user-actions.v1
+  consumer-topic: stats.user-actions.v1
   consume-attempt-timeout: 1000

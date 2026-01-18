@@ -11,16 +11,15 @@ import org.springframework.context.annotation.Configuration;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Properties;
 
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("aggregator")
-public class AggregatorConfig {
+@ConfigurationProperties("kafka")
+public class AggregatorKafkaConfig {
     private String producerTopic;
-    private List<String> consumerTopic;
+    private String consumerTopic;
     private Duration consumeAttemptTimeout;
     private Properties producerProperties;
     private Properties consumerProperties;

@@ -1,4 +1,4 @@
-package ru.practicum.ewm;
+package ru.practicum.ewm.handler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,54 +12,53 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.springframework.stereotype.Component;
-import ru.practicum.ewm.config.AggregatorConfig;
+import ru.practicum.ewm.config.AggregatorKafkaConfig;
+import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AggregationStarter {
+public class SimilarityCalculator {
     private static final Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
-    private final AggregatorConfig aggregatorConfig;
+    private final AggregatorKafkaConfig aggregatorKafkaConfig;
     private final KafkaConsumer<String, UserActionAvro> consumer;
     private final KafkaProducer<String, SpecificRecordBase> producer;
 
-    // Храним максимальные веса действий пользователей для каждого мероприятия
     private final Map<Long, Map<Long, Double>> userEventWeights = new HashMap<>();
-    // Храним суммы весов для каждого мероприятия
     private final Map<Long, Double> eventWeightSums = new HashMap<>();
-
-    private final Map<Long, Map<Long, Double>> minWeightsSums = new HashMap<>();
+    private final Map<Long, Map<Long, Double>> eventMinWeightsSum = new HashMap<>();
 
     private static void manageOffsets(ConsumerRecord<String, UserActionAvro> record, int count,
                                       KafkaConsumer<String, UserActionAvro> consumer) {
-        currentOffsets.put(
-                new TopicPartition(record.topic(), record.partition()),
+        currentOffsets.put(new TopicPartition(record.topic(), record.partition()),
                 new OffsetAndMetadata(record.offset() + 1)
         );
 
         if (count % 10 == 0) {
-            consumer.commitAsync(currentOffsets, (offsets, exception) -> {
-                if (exception != null) {
-                    log.warn("Ошибка во время фиксации оффсетов: {}", offsets, exception);
+            consumer.commitAsync(currentOffsets, (offsets, e) -> {
+                if (e != null) {
+                    log.warn("Offstes fixation exception: {}", offsets, e);
                 }
             });
         }
     }
 
-    public void start() {
+    public void run() {
+        Runtime.getRuntime().addShutdownHook(new Thread(consumer::wakeup));
         try {
-            consumer.subscribe(aggregatorConfig.getConsumerTopic());
+            consumer.subscribe(List.of(aggregatorKafkaConfig.getConsumerTopic()));
             while (true) {
-                ConsumerRecords<String, UserActionAvro> records = consumer.poll(aggregatorConfig.getConsumeAttemptTimeout());
+                ConsumerRecords<String, UserActionAvro> records = consumer.poll(aggregatorKafkaConfig.getConsumeAttemptTimeout());
                 int count = 0;
                 for (ConsumerRecord<String, UserActionAvro> record : records) {
-                    processEvent(record.value());
+                    handleAction(record.value());
                     manageOffsets(record, count, consumer);
                     count++;
                 }
@@ -70,104 +69,96 @@ public class AggregationStarter {
 
         } catch (
                 Exception e) {
-            log.error("Ошибка во время обработки событий от датчиков", e);
+            log.error("Events processing exception", e);
         } finally {
 
             try {
                 producer.flush();
                 consumer.commitSync(currentOffsets);
             } finally {
-                log.info("Закрываем консьюмер");
                 consumer.close();
-                log.info("Закрываем продюсер");
                 producer.close();
             }
         }
-
     }
 
-    private void processEvent(UserActionAvro userActionAvro) {
-        long userId = userActionAvro.getUserId();
-        long eventId = userActionAvro.getEventId();
-        double weight = switch (userActionAvro.getActionType()) {
+    private double getWeightByType(ActionTypeAvro type) {
+        return switch (type) {
             case VIEW -> 0.4;
             case REGISTER -> 0.8;
             case LIKE -> 1.0;
         };
+    }
+
+    private void handleAction(UserActionAvro userActionAvro) {
+        long userId = userActionAvro.getUserId();
+        long eventId = userActionAvro.getEventId();
+        double weight = getWeightByType(userActionAvro.getActionType());
         double oldWeight = userEventWeights.computeIfAbsent(eventId, e -> new HashMap<>())
                 .getOrDefault(userId, 0.0);
         if (oldWeight >= weight) {
-            return; //вес не изменился - пересчитывать нечего
+            return;
         }
         userEventWeights.computeIfAbsent(eventId, e -> new HashMap<>())
                 .merge(userId, weight, Math::max);
 
-        double newTotalWeight = countNewTotalWeightAndUpdateSaved(eventId, oldWeight, weight);
+        double newTotalWeight = updateTotalWeigh(eventId, oldWeight, weight);
         for (Long eventBId : userEventWeights.keySet()) {
             if (eventBId == eventId || !userEventWeights.get(eventBId).containsKey(userId)) {
-                continue;//пропускаем текущий ивент и те ивенты где юзер ничего не делал
+                continue;
             }
             double eventBWeight = userEventWeights.get(eventBId).get(userId);
             double oldMin = Math.min(oldWeight, eventBWeight);
             double newMin = Math.min(weight, eventBWeight);
             double delta = newMin - oldMin;
-            double oldSmin = getSMin(eventBId, eventId);
-            double minWeightSum = oldSmin;
+            double min = getMin(eventBId, eventId);
+            double minWeightSum = min;
             if (delta != 0) {
-                double newMinSum = oldSmin + delta;
+                double newMinSum = min + delta;
                 minWeightSum = newMinSum;
-                putSMin(eventBId, eventId, newMinSum);
+                setMin(eventBId, eventId, newMinSum);
             }
             double otherEventWeight = eventWeightSums.getOrDefault(eventBId, 0.0);
             double similarity = calculateSimilarity(minWeightSum, newTotalWeight, otherEventWeight);
-            sendSimilarity(eventId, eventBId, similarity, userActionAvro.getTimestamp());
+            pullSimilarity(eventId, eventBId, similarity, userActionAvro.getTimestamp());
         }
     }
 
-    private double countNewTotalWeightAndUpdateSaved(long eventId, double oldWeight, double newWeight) {
-        double oldTotalWeight = eventWeightSums.getOrDefault(eventId, 0.0);
+    private double updateTotalWeigh(long eventId, double oldWeight, double newWeight) {
+        double oldTotal = eventWeightSums.getOrDefault(eventId, 0.0);
         double delta = newWeight - oldWeight;
-        double newTotalWeight = oldTotalWeight + delta;
-        eventWeightSums.put(eventId, newTotalWeight);
-        return newTotalWeight;
+        double newTotal = oldTotal + delta;
+        eventWeightSums.put(eventId, newTotal);
+        return newTotal;
     }
 
-
-    public void putSMin(long eventA, long eventB, double sum) {
+    public void setMin(long eventA, long eventB, double sum) {
         long first = Math.min(eventA, eventB);
         long second = Math.max(eventA, eventB);
-
-        minWeightsSums
-                .computeIfAbsent(first, e -> new HashMap<>())
+        eventMinWeightsSum.computeIfAbsent(first, e -> new HashMap<>())
                 .put(second, sum);
     }
 
-    public double getSMin(long eventA, long eventB) {
+    public double getMin(long eventA, long eventB) {
         long first = Math.min(eventA, eventB);
         long second = Math.max(eventA, eventB);
-
-        return minWeightsSums
-                .computeIfAbsent(first, e -> new HashMap<>())
+        return eventMinWeightsSum.computeIfAbsent(first, e -> new HashMap<>())
                 .getOrDefault(second, 0.0);
     }
 
-    private double calculateSimilarity(
-            double minWeightSum,
-            double totalEventWeight,
-            double totalOtherEventWeight) {
-        double denominator = Math.sqrt(totalEventWeight) * Math.sqrt(totalOtherEventWeight);
-        return minWeightSum / denominator;
+    private double calculateSimilarity(double minWeightSum, double totalEventWeight,
+                                       double totalOtherEventWeight) {
+        return minWeightSum / (Math.sqrt(totalEventWeight) * Math.sqrt(totalOtherEventWeight));
     }
 
-    private void sendSimilarity(long eventA, long eventB, double similarity, Instant timestamp) {
+    private void pullSimilarity(long eventA, long eventB, double similarity, Instant timestamp) {
         EventSimilarityAvro eventSimilarity = EventSimilarityAvro.newBuilder()
                 .setEventA(Math.min(eventA, eventB))
                 .setEventB(Math.max(eventA, eventB))
                 .setScore(similarity)
                 .setTimestamp(timestamp)
                 .build();
-
-        producer.send(new ProducerRecord<>(aggregatorConfig.getProducerTopic(), eventSimilarity));
+        producer.send(new ProducerRecord<>(aggregatorKafkaConfig.getProducerTopic(), eventSimilarity));
     }
 
     public void stop() {
