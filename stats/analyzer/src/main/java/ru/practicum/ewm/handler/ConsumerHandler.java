@@ -1,4 +1,4 @@
-package ru.practicum.ewm.service;
+package ru.practicum.ewm.handler;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,68 +10,57 @@ import ru.practicum.ewm.repository.UserActionRepository;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
-
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class KafkaConsumerServiceImpl implements KafkaConsumerService {
+public class ConsumerHandler {
     private final EventSimilarityRepository eventSimilarityRepository;
     private final UserActionRepository userActionRepository;
 
-    @Override
-    public void userActionReceived(UserActionAvro userActionAvro) {
+    public void handleUserAction(UserActionAvro userActionAvro) {
         UserAction userAction = UserAction.builder()
                 .userId(userActionAvro.getUserId())
                 .eventId(userActionAvro.getEventId())
                 .actionType(UserActionType.valueOf(userActionAvro.getActionType().name()))
-                .timestamp(mapTimestamp(userActionAvro.getTimestamp()))
+                .timestamp(userActionAvro.getTimestamp().atZone(ZoneId.of("UTC")).toLocalDateTime())
                 .build();
         List<UserAction> actions = userActionRepository.findByUserIdAndEventId(userActionAvro.getUserId(), userActionAvro.getEventId());
-        if (!actions.isEmpty()) {
+        if (actions.isEmpty()) {
+            userActionRepository.save(userAction);
+        } else {
             UserAction oldAction = actions.getFirst();
-            if (calcInteractionScore(oldAction.getActionType()) < calcInteractionScore(userAction.getActionType())) {
+            if (getScore(oldAction.getActionType()) < getScore(userAction.getActionType())) {
                 userActionRepository.delete(oldAction);
                 userActionRepository.save(userAction);
             }
-        } else {
-            userActionRepository.save(userAction);
         }
-
     }
 
-    private double calcInteractionScore(UserActionType type) {
+    public void handleEventsSimilarity(EventSimilarityAvro eventSimilarityAvro) {
+        EventSimilarity eventSimilarity = EventSimilarity.builder()
+                .eventA(eventSimilarityAvro.getEventA())
+                .eventB(eventSimilarityAvro.getEventB())
+                .score(eventSimilarityAvro.getScore())
+                .timestamp(eventSimilarityAvro.getTimestamp().atZone(ZoneId.of("UTC")).toLocalDateTime())
+                .build();
+        List<EventSimilarity> similarities = eventSimilarityRepository.findByEventAAndEventB(eventSimilarity.getEventA(), eventSimilarity.getEventB());
+        if (similarities.isEmpty()) {
+            eventSimilarityRepository.save(eventSimilarity);
+        } else {
+            EventSimilarity oldSimilarity = similarities.getFirst();
+            oldSimilarity.setScore(eventSimilarity.getScore());
+            oldSimilarity.setTimestamp(eventSimilarity.getTimestamp());
+            eventSimilarityRepository.save(oldSimilarity);
+        }
+    }
+
+    private double getScore(UserActionType type) {
         return switch (type) {
             case VIEW -> 0.4;
             case REGISTER -> 0.8;
             case LIKE -> 1.0;
         };
-    }
-
-    @Override
-    public void eventsSimilarityReceived(EventSimilarityAvro eventSimilarityAvro) {
-        EventSimilarity eventSimilarity = EventSimilarity.builder()
-                .eventA(eventSimilarityAvro.getEventA())
-                .eventB(eventSimilarityAvro.getEventB())
-                .score(eventSimilarityAvro.getScore())
-                .timestamp(mapTimestamp(eventSimilarityAvro.getTimestamp()))
-                .build();
-        List<EventSimilarity> similarities = eventSimilarityRepository.findByEventAAndEventB(eventSimilarity.getEventA(), eventSimilarity.getEventB());
-        if (!similarities.isEmpty()) {
-            EventSimilarity oldSimilarity = similarities.getFirst();
-            oldSimilarity.setScore(eventSimilarity.getScore());
-            oldSimilarity.setTimestamp(eventSimilarity.getTimestamp());
-            eventSimilarityRepository.save(oldSimilarity);
-        }else {
-            eventSimilarityRepository.save(eventSimilarity);
-        }
-
-    }
-
-    private LocalDateTime mapTimestamp(Instant instant) {
-        return instant.atZone(ZoneId.of("UTC")).toLocalDateTime();
     }
 }

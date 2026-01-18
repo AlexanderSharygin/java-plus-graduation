@@ -1,4 +1,4 @@
-package ru.practicum.ewm.controller;
+package ru.practicum.ewm.grpc;
 
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -13,30 +13,25 @@ import ru.practicum.ewm.service.RecommendationService;
 
 @GrpcService
 @RequiredArgsConstructor
-public class RecommendationController extends RecommendationsControllerGrpc.RecommendationsControllerImplBase {
+public class GrpcClient extends RecommendationsControllerGrpc.RecommendationsControllerImplBase {
+
     private final RecommendationService recommendationService;
 
     @Override
-    public void getSimilarEvents(
-            SimilarEventsRequestProto request,
-            StreamObserver<RecommendedEventProto> responseObserver
-    ) {
+    public void getSimilarEvents(SimilarEventsRequestProto request,
+                                 StreamObserver<RecommendedEventProto> responseObserver) {
         recommendationService.getSimilarEvents(request, responseObserver);
     }
 
     @Override
-    public void getRecommendationsForUser(
-            UserPredictionsRequestProto request,
-            StreamObserver<RecommendedEventProto> responseObserver
-    ) {
+    public void getRecommendationsForUser(UserPredictionsRequestProto request,
+                                          StreamObserver<RecommendedEventProto> responseObserver) {
         recommendationService.getRecommendationsForUser(request, responseObserver);
     }
 
     @Override
-    public void getInteractionsCount(
-            InteractionsCountRequestProto request,
-            StreamObserver<RecommendedEventProto> responseObserver
-    ) {
+    public void getInteractionsCount(InteractionsCountRequestProto request,
+                                     StreamObserver<RecommendedEventProto> responseObserver) {
         recommendationService.getInteractionsCount(request, responseObserver);
     }
 }

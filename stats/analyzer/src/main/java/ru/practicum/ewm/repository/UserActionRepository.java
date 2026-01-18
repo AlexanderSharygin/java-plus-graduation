@@ -7,9 +7,8 @@ import ru.practicum.ewm.models.UserAction;
 import java.util.List;
 
 public interface UserActionRepository extends JpaRepository<UserAction, Long> {
-    List<UserAction> findByUserId(Long userId);
 
-    boolean existsByUserIdAndEventId(Long userId, Long eventId);
+    List<UserAction> findByUserId(Long userId);
 
     List<UserAction> findByEventId(Long eventId);
 

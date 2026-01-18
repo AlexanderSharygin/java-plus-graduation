@@ -5,17 +5,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.ConfigurableApplicationContext;
+import ru.practicum.ewm.service.AnalyzerRunner;
 
 
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableDiscoveryClient
-public class AnalyzerService {
+public class Analyzer {
     public static void main(String[] args) {
-        ConfigurableApplicationContext context = SpringApplication.run(AnalyzerService.class, args);
+        ConfigurableApplicationContext context = SpringApplication.run(Analyzer.class, args);
 
-        KafkaConsumerService kafkaConsumer = context.getBean(KafkaConsumerService.class);
+        AnalyzerRunner kafkaConsumer = context.getBean(AnalyzerRunner.class);
         Runtime.getRuntime().addShutdownHook(new Thread(kafkaConsumer::stop));
-        kafkaConsumer.start();
+        kafkaConsumer.run();
     }
 }

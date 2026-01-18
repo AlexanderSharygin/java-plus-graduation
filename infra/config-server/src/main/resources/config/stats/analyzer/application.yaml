@@ -19,16 +19,15 @@ grpc:
   server:
     port: 0
 
-analyzer:
+kafka:
   user-consumer-properties:
     bootstrap.servers: localhost:9092
-    group.id: user.analyzing
-    client.id: hubConsumer
+    group.id: analyzer.group.id
+
     key.deserializer: org.apache.kafka.common.serialization.VoidDeserializer
     value.deserializer: ru.practicum.ewm.deserializer.UserActionDeserializer
     enable.auto.commit: false
-  user-topics:
-    - stats.user-actions.v1
+  user-action-topic: stats.user-actions.v1
 
   similarity-consumer-properties:
     bootstrap.servers: localhost:9092
@@ -37,8 +36,7 @@ analyzer:
     key.deserializer: org.apache.kafka.common.serialization.VoidDeserializer
     value.deserializer: ru.practicum.ewm.deserializer.EventSimilarityDeserializer
     enable.auto.commit: false
-  similarity-topics:
-    - stats.events-similarity.v1
+  similarity-topic: stats.events-similarity.v1
   consume-attempt-timeout: 1000
 
 server:

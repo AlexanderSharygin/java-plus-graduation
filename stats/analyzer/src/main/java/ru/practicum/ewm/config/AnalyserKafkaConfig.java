@@ -10,20 +10,18 @@ import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Properties;
 
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("analyzer")
-public class AnalyserConfig {
-    private List<String> similarityTopics;
-    private List<String> userTopics;
+@ConfigurationProperties("kafka")
+public class AnalyserKafkaConfig {
+    private String similarityTopic;
+    private String userActionTopic;
     private Duration consumeAttemptTimeout;
     private Properties userConsumerProperties;
     private Properties similarityConsumerProperties;
-
 
     @Bean
     public KafkaConsumer<String, UserActionAvro> userConsumer() {
